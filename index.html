@@ -256,7 +256,7 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
     <h2>Project Clinic Inventory System</h2>
     <p class="sub">C-SHInE &middot; KLE Technological University</p>
     <div class="track"><i></i></div>
-    <div id="bootMsg">Connecting to C-SHInE data&hellip;</div>
+    <div id="bootMsg">Connecting to C-SHInE Proposal_Data&hellip;</div>
     <div id="bootErr"></div>
   </div>
 </div>
@@ -573,7 +573,7 @@ $('csvBtn').onclick=()=>{
 };
 
 /* ------------------------------------------------------------------- load */
-const STEPS=['Connecting to C-SHInE data…','Reading the department Sheet…',
+const STEPS=['Connecting to C-SHInE Proposal_Data…','Reading the department Sheet…',
              'Matching existing stock…','Costing the requirement…'];
 let stepTimer=null;
 function runSteps(){let i=0;$('bootMsg').textContent=STEPS[0];
