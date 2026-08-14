@@ -16,6 +16,10 @@
   --r:12px; --sh:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.28);
 }
 *{box-sizing:border-box}
+/* Deterrent only - a determined reader can still get the data. Inputs stay
+   selectable so search and the CSV export remain usable. */
+body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+input,textarea,select{-webkit-user-select:text;-moz-user-select:text;user-select:text}
 html{scroll-behavior:smooth;scroll-padding-top:96px}
 body{margin:0;background:var(--bg);color:var(--ink);
 padding-bottom:calc(var(--footer-h) + 8px);
@@ -27,12 +31,13 @@ background:radial-gradient(1200px 600px at 50% 35%,#0f1c4d 0%,#0a1728 55%,#050c1
 transition:opacity .5s ease,visibility .5s ease}
 #boot.done{opacity:0;visibility:hidden}
 .boot-in{text-align:center;max-width:460px;padding:24px}
-.mono{width:74px;height:74px;margin:0 auto 22px;border-radius:18px;
+.mono{width:104px;height:104px;margin:0 auto 22px;border-radius:22px;
 background:linear-gradient(145deg,#132b4d,#0a1728);border:1px solid var(--gold-dim);
 display:grid;place-items:center;font-weight:800;font-size:23px;color:var(--gold);
 letter-spacing:.02em;box-shadow:0 0 0 0 rgba(212,175,55,.5);
 animation:pulse 2.1s ease-out infinite}
-.mono img{width:100%;height:100%;object-fit:contain;border-radius:18px}
+.mono img{width:86%;height:86%;object-fit:contain;border-radius:0;background:none}
+.mono.hasimg{background:none;border:0;box-shadow:none;animation:none}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(212,175,55,.42)}
 70%{box-shadow:0 0 0 22px rgba(212,175,55,0)}100%{box-shadow:0 0 0 0 rgba(212,175,55,0)}}
 .boot-in h2{margin:0 0 6px;font-size:19px;color:#fff;font-weight:650;letter-spacing:-.01em}
@@ -55,10 +60,11 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px
 background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7}
 header .in,main{max-width:1500px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.logo{width:52px;height:52px;border-radius:13px;flex:0 0 auto;
+.logo{width:66px;height:66px;border-radius:15px;flex:0 0 auto;
 background:linear-gradient(145deg,#132b4d,#0a1728);border:1px solid var(--gold-dim);
 display:grid;place-items:center;font-weight:800;font-size:16px;color:var(--gold)}
-.logo img{width:100%;height:100%;object-fit:contain;border-radius:13px}
+.logo img{width:88%;height:88%;object-fit:contain;border-radius:0;background:none}
+.logo.hasimg{background:none;border:0}
 h1{margin:0;font-size:25px;letter-spacing:-.02em;line-height:1.15;color:#fff}
 h1 .amp{color:var(--gold)}
 .org{font-size:12px;color:var(--muted);margin-top:3px;letter-spacing:.02em}
@@ -184,15 +190,60 @@ text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7)}
 #gag button{background:linear-gradient(135deg,var(--gold),#b8952c);color:#1a1206;border:0;
 padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
 
+@page{size:A4 landscape;margin:11mm 9mm 13mm}
 @media print{
-  body{background:#fff;color:#000;padding-bottom:0}
-  #boot,#gag,.controls,.livebar{display:none!important}
-  footer{position:static;background:#fff;color:#333;border-color:#ccc}
-  header{background:#0a1728!important;-webkit-print-color-adjust:exact}
-  .panel,.tile,.sem{border-color:#ccc;background:#fff;box-shadow:none}
-  .tblwrap.tall{max-height:none}
-  thead th,tbody td:first-child,tbody td:nth-child(2){position:static}
-  .heart{animation:none}
+  :root{--footer-h:0px}
+  html,body{background:#fff!important;color:#000!important;padding-bottom:0;
+    font-size:8.6pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #boot,#gag,.controls,.livebar,.tile::after{display:none!important}
+  body{-webkit-user-select:auto;user-select:auto}
+
+  header{background:#0a1728!important;padding:8mm 6mm 6mm;border:0}
+  header::after{display:none}
+  h1{font-size:16pt;color:#fff!important}
+  .org{color:#cfe2f3!important;font-size:8.5pt}
+  .logo{width:58px;height:58px;border:1px solid #8a7328}
+  main{padding:5mm 0 0}
+
+  h2{color:#0a2540!important;font-size:8.5pt;border-bottom:1px solid #999;
+     padding-bottom:2mm;margin-bottom:3mm}
+  section{margin-bottom:6mm;break-inside:auto}
+  #sec-lines{break-before:page}
+
+  .tiles{grid-template-columns:repeat(4,1fr);gap:3mm}
+  .tile{background:#fff!important;border:1px solid #bbb!important;box-shadow:none;
+    padding:2.5mm 3mm;break-inside:avoid}
+  .tile .val{color:#0a2540!important;font-size:13pt}
+  .tile .lbl,.tile .sub{color:#444!important}
+  .panel,.sem,.note{background:#fff!important;border-color:#bbb!important;
+    box-shadow:none;color:#222!important;padding:3mm}
+  .note b{color:#000!important}
+
+  /* the important bits: repeat headings, never split a row */
+  .tblwrap,.tblwrap.tall{max-height:none!important;overflow:visible!important}
+  table{page-break-inside:auto}
+  thead{display:table-header-group}
+  tfoot{display:table-footer-group}
+  tr{page-break-inside:avoid;break-inside:avoid}
+  th,td{background:#fff!important;color:#000!important;border-bottom:1px solid #ccc;
+    padding:1.2mm 1.8mm;vertical-align:top}
+  thead th{position:static!important;background:#e8edf3!important;color:#0a2540!important;
+    border-bottom:1.2pt solid #0a2540;font-size:7.6pt;white-space:normal}
+  tbody td:first-child,tbody td:nth-child(2),
+  thead th:first-child,thead th:nth-child(2){position:static!important;box-shadow:none}
+  tbody tr:hover td{background:#fff!important}
+  .why{color:#444!important;font-size:7.4pt;max-width:none}
+  .bar{border-color:#bbb}.bar span{background:#0a2540!important}
+  .pill{border:1px solid #999!important;color:#000!important;background:#fff!important}
+
+  /* trim the widest low-value columns so the table fits the page */
+  #mainTbl th:nth-child(3),#mainTbl td:nth-child(3),
+  #mainTbl th:nth-child(4),#mainTbl td:nth-child(4){display:none}
+
+  footer{position:static;background:#fff;color:#333;border-color:#ccc;height:auto;
+    padding:3mm 0 0;margin-top:4mm}
+  .heart{animation:none;color:#c00!important}
+  a{color:#000!important;text-decoration:none}
 }
 </style>
 </head>
@@ -237,8 +288,6 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
         <th class="num">Transferable</th><th class="num">Avoided cost</th>
         <th>Currently held at</th></tr></thead>
       <tbody id="redisBody"></tbody></table></div></div></section>
-
-  <section id="sec-sem"><h2>Semester-wise justification</h2><div id="sems"></div></section>
 
   <section id="sec-cat"><h2>Category summary</h2>
     <div class="panel"><div class="tblwrap tall"><table>
@@ -303,16 +352,6 @@ const API = 'https://script.google.com/macros/s/AKfycbx0iaSzRcWxSCVAsjfXWW90kW_p
 const LOGO = 'assets/KLE_Logo.png';
 
 /* ---------------------------------------------------------------- content */
-const SEMS=[
- ['1-2','Semester 1-2 · Foundation','Basic Electrical & Electronics, Engineering Workshop, Design Thinking',
-  'First contact with a circuit. Breadboards, hand tools, LEDs, resistors, 9V supplies and the 555. The goal is that every student builds something that lights up in week one, with tools that work and parts that are actually in stock.'],
- ['3-4','Semester 3-4 · Core circuits','Electronic Devices & Circuits, Digital Electronics, Network Analysis, Analog Circuits',
-  'The point at which having no oscilloscope becomes genuinely disabling. Students must see a waveform, not calculate one. Function generator, dual-rail bench supply, logic families, op-amps and the discretes to build filters and amplifiers.'],
- ['5-6','Semester 5-6 · Embedded & systems','Microcontrollers, Embedded Systems, Sensors & Instrumentation, Control Systems, IoT',
-  'The heart of the clinic. ESP32, STM32 and Arduino against real sensors, actuators and power stages. Logic analysers and carrier boards move a team from "it works on my breadboard" to a wired assembly that survives being carried to a review.'],
- ['7-8','Semester 7-8 · Capstone & productisation','Major Project, Mini Project, Internship, Electives (Robotics, Edge AI, RF)',
-  'Where a project becomes a product: fabricated PCBs, printed enclosures, battery systems, documentation and photography. This is the phase that yields patents, publications, competition entries and startup pitches.']];
-
 const TEACHING=['lhc 103','lhc 203','lhc 303'];
 let ROWS=[], META={};
 
@@ -329,7 +368,8 @@ const dmyTime=d=>dmy(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes());
 const endpoint=()=>new URLSearchParams(location.search).get('api')||API||'';
 
 if(LOGO){ const h='<img src="'+esc(LOGO)+'" alt="C-SHInE">';
-  $('logoBox').innerHTML=h; $('bootLogo').innerHTML=h; }
+  $('logoBox').innerHTML=h; $('logoBox').classList.add('hasimg');
+  $('bootLogo').innerHTML=h; $('bootLogo').classList.add('hasimg'); }
 
 /* ------------------------------------------------------- derive from Sheet */
 function build(inventory,proposal){
@@ -420,12 +460,6 @@ function renderAll(){
     <td class="num">${esc(inr(r.sv))}</td>
     <td style="font-size:12px;color:var(--dim)">${esc(r.loc)}</td></tr>`).join('')
     ||'<tr><td colspan="6" style="text-align:center;color:var(--dim)">Nothing transferable.</td></tr>';
-
-  $('sems').innerHTML=SEMS.map(([k,t,c,b])=>{
-    const rs=ROWS.filter(r=>r.sem===k);
-    return `<div class="sem"><div class="semhead"><h3>${esc(t)}</h3>
-      <span class="chip">${esc(short(rs.reduce((a,r)=>a+r.t,0)))} &middot; ${rs.length} lines</span>
-      </div><p class="courses">${esc(c)}</p><p>${esc(b)}</p></div>`;}).join('');
 
   const cm={};
   ROWS.forEach(r=>{const c=cm[r.c]=cm[r.c]||{lines:0,units:0,cost:0,NONE:0,SOME:0,HELD:0};
@@ -537,8 +571,12 @@ async function load(first){
     $('app').hidden=false;
     renderAll();
     $('dot').className='dot live';
+    /* Timestamp is the SERVER's, sent by Apps Script alongside the data -
+       not the viewer's clock, so every reader sees the same reading time. */
+    const stamp=j.generatedAtLocal||(j.generatedAt?dmyTime(new Date(j.generatedAt)):'—');
     $('srcText').innerHTML='Live from C-SHInE Google Sheet &middot; '+inv.length+
-      ' stock rows &middot; '+prop.length+' proposed &middot; '+dmyTime(new Date());
+      ' stock rows &middot; '+prop.length+' proposed &middot; '+esc(stamp)+
+      (j.cached?' <span style="color:var(--dim)">(cached)</span>':'');
     $('boot').classList.add('done');
     setTimeout(()=>{$('boot').style.display='none';},600);
   }catch(err){
@@ -566,11 +604,32 @@ function gag(){const g=GAGS[Math.floor(Math.random()*GAGS.length)];
  $('gagEmo').innerHTML=g[0];$('gagTitle').innerHTML=g[1];$('gagMsg').innerHTML=g[2];
  $('gag').style.display='grid';}
 document.addEventListener('contextmenu',e=>{e.preventDefault();gag();});
+
+/* Keyboard select/copy. Only a deterrent - the CSV export is the sanctioned
+   way to take the data, and it respects whatever filter is applied.
+   Anything typed into an input is left alone so search still works. */
+const inField=e=>{const t=e.target;return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||
+  t.tagName==='SELECT'||t.isContentEditable);};
+
+['copy','cut','selectstart','dragstart'].forEach(ev=>
+  document.addEventListener(ev,e=>{ if(inField(e))return; e.preventDefault(); }));
+
 document.addEventListener('keydown',e=>{
  const k=(e.key||'').toUpperCase();
- if(k==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(k))||(e.ctrlKey&&k==='U')){
-   e.preventDefault();gag();}
- if(e.key==='Escape')$('gag').style.display='none';});
+ if(e.key==='Escape'){$('gag').style.display='none';return;}
+ if(inField(e)) return;
+ const mod=e.ctrlKey||e.metaKey;
+ if(k==='F12'||(mod&&e.shiftKey&&['I','J','C'].includes(k))||(mod&&k==='U')){
+   e.preventDefault();gag();return;}
+ if(mod&&['A','C','X','S'].includes(k)){ e.preventDefault();
+   if(k==='C'||k==='X'){
+     $('gagEmo').innerHTML='&#128203;';
+     $('gagTitle').textContent='Copy blocked';
+     $('gagMsg').innerHTML='Use <b>Export CSV</b> instead &mdash; it exports exactly the rows '+
+       'you have filtered, with headers, ready for a purchase note.';
+     $('gag').style.display='grid';
+   } else gag();
+ }});
 </script>
 </body>
 </html>
