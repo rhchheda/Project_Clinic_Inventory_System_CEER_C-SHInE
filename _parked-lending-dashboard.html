@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CEER Electronics Lab - Inventory KPIs</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --line:#e3e6ea; --ink:#161a20; --muted:#5f6875;
+    --accent:#2563eb; --good:#0f8a4f; --warn:#b45309; --bad:#c0392b;
+    --chart1:#2563eb; --chart2:#0f8a4f; --chart3:#b45309;
+    --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.1);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0f1319; --panel:#171c24; --line:#262d38; --ink:#e8ecf1; --muted:#98a2b3;
+      --accent:#5b8cff; --good:#35c07a; --warn:#e0a13a; --bad:#ef6b5c;
+      --chart1:#5b8cff; --chart2:#35c07a; --chart3:#e0a13a;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    padding:16px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:18px;letter-spacing:-.01em}
+  h1 small{display:block;font-weight:400;font-size:12px;color:var(--muted);letter-spacing:0}
+  .status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .dot.live{background:var(--good)} .dot.demo{background:var(--warn)} .dot.err{background:var(--bad)}
+  button{font:inherit;font-size:13px;padding:7px 13px;border:1px solid var(--line);
+    border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  main{padding:20px;max-width:1500px;margin:0 auto}
+  section{margin-bottom:26px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+    margin:0 0 12px;font-weight:600}
+
+  .tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .tile .value{font-size:26px;font-weight:650;margin-top:6px;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums}
+  .tile .sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .tile.alert{border-left:3px solid var(--bad)}
+  .tile.watch{border-left:3px solid var(--warn)}
+  .tile.ok{border-left:3px solid var(--good)}
+
+  .grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;box-shadow:var(--shadow);overflow:hidden}
+  .panel h3{margin:0 0 14px;font-size:14px;font-weight:600}
+
+  .tblwrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:last-child td{border-bottom:none}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.bad{background:rgba(192,57,43,.14);color:var(--bad)}
+  .pill.warn{background:rgba(180,83,9,.14);color:var(--warn)}
+  .pill.good{background:rgba(15,138,79,.14);color:var(--good)}
+
+  .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;min-width:70px}
+  .bar span{display:block;height:100%;background:var(--chart1)}
+
+  .empty{color:var(--muted);font-size:13px;padding:16px 0;text-align:center}
+  svg{display:block;width:100%;height:auto}
+
+  dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);
+    color:var(--ink);padding:20px;max-width:520px;width:92%;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+  input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;
+    background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+  .hint{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}
+  footer{padding:0 20px 30px;max-width:1500px;margin:0 auto;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CEER Electronics Lab
+    <small id="subtitle">Inventory &amp; utilisation dashboard</small></h1>
+  <div class="status">
+    <span class="dot" id="dot"></span><span id="statusText">starting</span>
+    <button id="refreshBtn">Refresh</button>
+    <button id="configBtn" class="primary">Connect</button>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>Position</h2>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section>
+    <h2>Where the value sits</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Stock value by category</h3>
+        <div id="catChart"></div>
+      </div>
+      <div class="panel">
+        <h3>Movement, last <span id="windowDays">30</span> days</h3>
+        <div id="trendChart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Needs action</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Below reorder level</h3>
+        <div class="tblwrap"><table id="lowStock"></table></div>
+      </div>
+      <div class="panel">
+        <h3>Overdue loans</h3>
+        <div class="tblwrap"><table id="overdue"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Utilisation</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Most issued items</h3>
+        <div class="tblwrap"><table id="topMoving"></table></div>
+      </div>
+      <div class="panel">
+        <h3>Calibration due</h3>
+        <div class="tblwrap"><table id="calibration"></table></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="footer"></footer>
+
+<dialog id="configDlg">
+  <h3 style="margin:0 0 4px">Connect to the lab sheet</h3>
+  <p class="hint" style="margin-top:0">Paste the Apps Script web app URL and the
+    <b>read</b> token (CEER Lab &rsaquo; Show API tokens). Both are stored only in
+    this browser.</p>
+  <label for="epInput">Web app URL</label>
+  <input id="epInput" placeholder="https://script.google.com/macros/s/AKfy.../exec">
+  <label for="tkInput">Read token</label>
+  <input id="tkInput" placeholder="32 character read token">
+  <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+    <button id="clearCfg">Use demo data</button>
+    <button id="saveCfg" class="primary">Save &amp; connect</button>
+  </div>
+  <p class="hint">The read token only exposes catalogue and KPI data. Issue and
+    return need the write token, which stays on the kiosk - never put it here.</p>
+</dialog>
+
+<script>
+/* ------------------------------------------------------------------ config */
+const LS_EP = 'ceer.endpoint', LS_TK = 'ceer.readToken';
+const POLL_MS = 60000;
+let state = { data: null, live: false, timer: null };
+
+const $ = id => document.getElementById(id);
+const cfg = () => ({ ep: localStorage.getItem(LS_EP) || '', tk: localStorage.getItem(LS_TK) || '' });
+
+/* ----------------------------------------------------------------- helpers */
+const inr = n => {
+  n = Math.round(Number(n) || 0);
+  if (Math.abs(n) >= 10000000) return '₹' + (n / 10000000).toFixed(2) + ' Cr';
+  if (Math.abs(n) >= 100000)   return '₹' + (n / 100000).toFixed(2) + ' L';
+  return '₹' + n.toLocaleString('en-IN');
+};
+const inrFull = n => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const pct = n => (Number(n) * 100).toFixed(1) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function table(el, cols, rows, emptyMsg) {
+  if (!rows.length) {
+    el.innerHTML = '<tbody><tr><td class="empty">' + esc(emptyMsg) + '</td></tr></tbody>';
+    return;
+  }
+  const head = '<thead><tr>' + cols.map(c =>
+    '<th' + (c.num ? ' class="num"' : '') + '>' + esc(c.label) + '</th>').join('') + '</tr></thead>';
+  const body = '<tbody>' + rows.map(r => '<tr>' + cols.map(c =>
+    '<td' + (c.num ? ' class="num"' : '') + '>' + c.get(r) + '</td>').join('') + '</tr>').join('') + '</tbody>';
+  el.innerHTML = head + body;
+}
+
+/* ------------------------------------------------------------------ charts */
+function barChart(host, rows, labelKey, valueKey, colorVar) {
+  if (!rows.length) { host.innerHTML = '<div class="empty">No data</div>'; return; }
+  const top = rows.slice(0, 10);
+  const max = Math.max(...top.map(r => Number(r[valueKey]) || 0), 1);
+  const rowH = 26, padL = 168, padR = 78, w = 640, h = top.length * rowH + 8;
+
+  const bars = top.map((r, i) => {
+    const v = Number(r[valueKey]) || 0;
+    const bw = Math.max((v / max) * (w - padL - padR), 1);
+    const y = i * rowH;
+    const label = String(r[labelKey] ?? '');
+    const short = label.length > 24 ? label.slice(0, 23) + '…' : label;
+    return `<g>
+      <text x="${padL - 10}" y="${y + 15}" text-anchor="end" font-size="12"
+        fill="var(--muted)">${esc(short)}<title>${esc(label)}</title></text>
+      <rect x="${padL}" y="${y + 4}" width="${bw}" height="14" rx="3" fill="var(${colorVar})"/>
+      <text x="${padL + bw + 8}" y="${y + 15}" font-size="12" fill="var(--ink)"
+        font-variant-numeric="tabular-nums">${esc(inr(v))}</text></g>`;
+  }).join('');
+
+  host.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img"
+    aria-label="Bar chart">${bars}</svg>`;
+}
+
+function trendChart(host, rows) {
+  if (!rows || rows.length < 2) {
+    host.innerHTML = '<div class="empty">Not enough movement history yet</div>'; return;
+  }
+  const w = 640, h = 200, padL = 42, padB = 26, padT = 12, padR = 10;
+  const max = Math.max(...rows.flatMap(r => [r.issues, r.returns, r.receipts]), 1);
+  const xs = i => padL + (i * (w - padL - padR)) / Math.max(rows.length - 1, 1);
+  const ys = v => h - padB - (v / max) * (h - padB - padT);
+
+  const line = (key, colorVar) => {
+    const d = rows.map((r, i) => (i ? 'L' : 'M') + xs(i).toFixed(1) + ' ' + ys(r[key] || 0).toFixed(1)).join(' ');
+    return `<path d="${d}" fill="none" stroke="var(${colorVar})" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"/>`;
+  };
+
+  const gridY = [0, 0.5, 1].map(f => {
+    const y = ys(max * f);
+    return `<line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="var(--line)"/>
+      <text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10"
+        fill="var(--muted)">${Math.round(max * f)}</text>`;
+  }).join('');
+
+  const first = rows[0].date, last = rows[rows.length - 1].date;
+
+  host.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Movement trend">
+    ${gridY}${line('issues', '--chart1')}${line('returns', '--chart2')}${line('receipts', '--chart3')}
+    <text x="${padL}" y="${h - 6}" font-size="10" fill="var(--muted)">${esc(first)}</text>
+    <text x="${w - padR}" y="${h - 6}" text-anchor="end" font-size="10"
+      fill="var(--muted)">${esc(last)}</text></svg>
+  <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px">
+    <span><b style="color:var(--chart1)">—</b> issued</span>
+    <span><b style="color:var(--chart2)">—</b> returned</span>
+    <span><b style="color:var(--chart3)">—</b> received</span></div>`;
+}
+
+/* ------------------------------------------------------------------ render */
+function render(k) {
+  $('subtitle').textContent = k.labName + ' · ' + k.totals.skuCount +
+    ' SKUs · updated ' + new Date(k.generatedAt).toLocaleString('en-IN');
+  $('windowDays').textContent = k.windowDays;
+
+  const t = k.totals, a = k.alerts, r = k.rates;
+  const tiles = [
+    { label: 'Stock on hand', value: inr(t.inventoryValue),
+      sub: t.unitCount.toLocaleString('en-IN') + ' units across ' + t.skuCount + ' SKUs', cls: '' },
+    { label: 'Out with students', value: inr(r.openLoanValue),
+      sub: r.openLoanCount + ' open loans · ' + pct(r.utilisation) + ' utilisation', cls: 'ok' },
+    { label: 'Overdue', value: String(a.overdueLoans),
+      sub: inr(a.overdueValue) + ' outstanding', cls: a.overdueLoans ? 'alert' : 'ok' },
+    { label: 'Below reorder', value: String(a.belowReorder + a.outOfStock),
+      sub: a.outOfStock + ' at zero · ' + inr(a.reorderValue) + ' to replenish',
+      cls: a.outOfStock ? 'alert' : (a.belowReorder ? 'watch' : 'ok') },
+    { label: 'Consumed / ' + k.windowDays + 'd', value: inr(r.consumptionValue),
+      sub: r.issueCount + ' issues booked', cls: '' },
+    { label: 'Calibration due', value: String(a.calibrationDue),
+      sub: a.calibrationOverdue + ' already lapsed',
+      cls: a.calibrationOverdue ? 'alert' : (a.calibrationDue ? 'watch' : 'ok') },
+    { label: 'Open POs', value: inr(t.openPoValue), sub: t.openPoCount + ' orders in flight', cls: '' },
+    { label: 'Active projects', value: String(k.projects.active),
+      sub: Object.entries(k.projects.byPhase).filter(([, v]) => v)
+        .map(([p, v]) => v + ' ' + p.toLowerCase()).join(' · ') || 'none logged', cls: '' },
+    { label: 'Procurement gap', value: inr(t.procurementGap),
+      sub: 'planned ' + inr(t.plannedValue) + ' vs held', cls: t.procurementGap > 0 ? 'watch' : 'ok' },
+    { label: 'Shrinkage', value: pct(r.shrinkage),
+      sub: 'damaged + written off', cls: r.shrinkage > 0.02 ? 'watch' : 'ok' }
+  ];
+
+  $('tiles').innerHTML = tiles.map(x =>
+    `<div class="tile ${x.cls}"><div class="label">${esc(x.label)}</div>
+     <div class="value">${esc(x.value)}</div><div class="sub">${esc(x.sub)}</div></div>`).join('');
+
+  barChart($('catChart'), k.categories, 'category', 'value', '--chart1');
+  trendChart($('trendChart'), k.trend);
+
+  table($('lowStock'), [
+    { label: 'Item', get: x => esc(x.name) },
+    { label: 'Bin', get: x => esc(x.location || '') },
+    { label: 'On hand', num: true, get: x => x.onHand },
+    { label: 'Reorder', num: true, get: x => x.reorderLevel },
+    { label: 'Order', num: true, get: x => '<b>' + x.shortfall + '</b>' },
+    { label: 'Supplier', get: x => x.sourcingUrl
+        ? `<a href="${esc(x.sourcingUrl)}" target="_blank" rel="noopener">${esc(x.supplier)}</a>`
+        : esc(x.supplier) },
+    { label: 'Value', num: true, get: x => esc(inrFull(x.reorderValue)) }
+  ], k.lowStock, 'Everything is above its reorder level.');
+
+  table($('overdue'), [
+    { label: 'Member', get: x => esc(x.memberName) },
+    { label: 'Item', get: x => esc(x.itemName) },
+    { label: 'Qty', num: true, get: x => x.qty },
+    { label: 'Due', get: x => esc(x.dueDate) },
+    { label: 'Late', num: true, get: x =>
+        `<span class="pill ${x.daysOverdue > 14 ? 'bad' : 'warn'}">${x.daysOverdue}d</span>` },
+    { label: 'Value', num: true, get: x => esc(inrFull(x.value)) }
+  ], k.overdue, 'No overdue loans.');
+
+  table($('topMoving'), [
+    { label: 'Item', get: x => esc(x.name) },
+    { label: 'Category', get: x => esc(x.category) },
+    { label: 'Qty', num: true, get: x => x.qty },
+    { label: 'Share', get: x => {
+        const max = Math.max(...k.topMoving.map(m => m.qty), 1);
+        return `<div class="bar"><span style="width:${(x.qty / max * 100).toFixed(0)}%"></span></div>`; } },
+    { label: 'Value', num: true, get: x => esc(inrFull(x.value)) }
+  ], k.topMoving, 'No issues recorded in this window.');
+
+  table($('calibration'), [
+    { label: 'Asset', get: x => esc(x.assetId) },
+    { label: 'Instrument', get: x => esc(x.name) },
+    { label: 'Serial', get: x => esc(x.serialNo || '') },
+    { label: 'Due', get: x => esc(x.dueOn) },
+    { label: 'Status', get: x => x.overdue
+        ? `<span class="pill bad">lapsed ${-x.daysRemaining}d</span>`
+        : `<span class="pill ${x.daysRemaining < 14 ? 'warn' : 'good'}">${x.daysRemaining}d</span>` }
+  ], k.calibration, 'No instruments due for calibration.');
+
+  $('footer').textContent = state.live
+    ? 'Live from Google Sheets. Auto-refreshes every ' + (POLL_MS / 1000) + 's.'
+    : 'Demo data - click Connect to point this at your lab sheet.';
+}
+
+/* -------------------------------------------------------------------- load */
+function setStatus(cls, text) {
+  $('dot').className = 'dot ' + cls;
+  $('statusText').textContent = text;
+}
+
+async function load() {
+  const { ep, tk } = cfg();
+  if (!ep || !tk) {
+    state.live = false;
+    setStatus('demo', 'demo data');
+    render(demoData());
+    return;
+  }
+  setStatus('', 'loading…');
+  try {
+    const url = ep + (ep.includes('?') ? '&' : '?') +
+      'action=kpis&token=' + encodeURIComponent(tk);
+    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'request failed');
+    state.data = json.data;
+    state.live = true;
+    setStatus('live', json.data.cached ? 'live (cached)' : 'live');
+    render(json.data);
+  } catch (e) {
+    state.live = false;
+    setStatus('err', 'error: ' + e.message);
+    if (!state.data) render(demoData());
+  }
+}
+
+/* ---------------------------------------------------------------- demo data */
+function demoData() {
+  const days = [], today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const wd = d.getDay() !== 0 && d.getDay() !== 6;
+    days.push({
+      date: d.toISOString().slice(0, 10),
+      issues: wd ? 8 + Math.round(Math.sin(i / 3) * 5 + Math.random() * 6) : 1,
+      returns: wd ? 6 + Math.round(Math.cos(i / 4) * 4 + Math.random() * 5) : 1,
+      receipts: i % 7 === 0 ? 20 + Math.round(Math.random() * 30) : 0
+    });
+  }
+  return {
+    generatedAt: new Date().toISOString(),
+    labName: 'KLE CEER Electronics Lab (demo)',
+    windowDays: 30,
+    totals: { inventoryValue: 24180000, issuedValue: 1840000, damagedValue: 96000,
+      plannedValue: 31032200, procurementGap: 5012200, skuCount: 499, unitCount: 9840,
+      openPoValue: 1450000, openPoCount: 7 },
+    alerts: { outOfStock: 6, belowReorder: 23, neverStocked: 41, reorderValue: 386400,
+      overdueLoans: 5, overdueValue: 148500, calibrationDue: 4, calibrationOverdue: 1 },
+    rates: { utilisation: 0.0707, shrinkage: 0.0037, stockAccuracy: 0.918,
+      consumptionValue: 96400, receiptValue: 742000, issueCount: 214,
+      openLoanCount: 63, openLoanValue: 1840000, returnCompliance: 0.92 },
+    projects: { active: 18, budget: 940000,
+      byPhase: { IDEA: 6, PROTOTYPE: 7, PILOT: 3, PRODUCT: 2, PARKED: 0 }, spend: [] },
+    categories: [
+      { category: 'Test & Measurement', value: 9741900 }, { category: 'Soldering & Rework', value: 3356100 },
+      { category: 'Infrastructure', value: 2468000 }, { category: 'Embedded', value: 2328600 },
+      { category: 'Fabrication', value: 2315500 }, { category: 'Productization', value: 1984500 },
+      { category: 'IT', value: 1715000 }, { category: 'Components', value: 714750 },
+      { category: 'Expansion Boards', value: 667150 }, { category: 'Sensors', value: 644700 }
+    ],
+    tiers: { CORE: 15213300, ADV: 8824900, FLAG: 6994000 },
+    topMoving: [
+      { itemId: 'EMB-010', name: 'ESP32-S3-DevKitC-1 N16R8', category: 'Embedded', qty: 46, value: 59800 },
+      { itemId: 'PRO-001', name: 'Breadboard 830 point', category: 'Prototyping', qty: 38, value: 6840 },
+      { itemId: 'EXP-001', name: 'Arduino Sensor Shield V5.0', category: 'Expansion Boards', qty: 31, value: 20150 },
+      { itemId: 'CON-100', name: 'Qwiic / STEMMA QT Cable Set', category: 'Interconnect', qty: 29, value: 5220 },
+      { itemId: 'SOL-050', name: 'Solder Wire Sn63Pb37 0.5mm', category: 'Soldering & Rework', qty: 22, value: 63800 },
+      { itemId: 'EMB-020', name: 'Raspberry Pi 5 8GB', category: 'Embedded', qty: 14, value: 137200 },
+      { itemId: 'ACT-010', name: 'Stepper Motor NEMA17', category: 'Actuators', qty: 12, value: 10200 }
+    ],
+    trend: days,
+    lowStock: [
+      { itemId: 'SOL-050', name: 'Solder Wire Sn63Pb37 0.5mm 500g', location: 'CON-S1', onHand: 4,
+        reorderLevel: 6, shortfall: 2, supplier: 'Evelta', sourcingUrl: 'https://evelta.com',
+        reorderValue: 5800 },
+      { itemId: 'EMB-010', name: 'ESP32-S3-DevKitC-1 N16R8', location: 'EMB-A2', onHand: 8,
+        reorderLevel: 10, shortfall: 2, supplier: 'Robu.in', sourcingUrl: 'https://robu.in',
+        reorderValue: 2600 },
+      { itemId: 'CON-100', name: 'Qwiic / STEMMA QT Cable Set', location: 'CON-C1', onHand: 11,
+        reorderLevel: 15, shortfall: 4, supplier: 'Robu.in', sourcingUrl: 'https://robu.in',
+        reorderValue: 720 },
+      { itemId: 'MEC-006', name: 'PLA Filament 1.75mm 1kg', location: 'FAB-A2', onHand: 9,
+        reorderLevel: 12, shortfall: 3, supplier: 'Bambu Lab India Store',
+        sourcingUrl: 'https://in.store.bambulab.com', reorderValue: 3900 },
+      { itemId: 'SOL-055', name: 'Desoldering Wick 2mm', location: 'CON-S1', onHand: 0,
+        reorderLevel: 15, shortfall: 15, supplier: 'Robu.in', sourcingUrl: 'https://robu.in',
+        reorderValue: 3750 }
+    ],
+    overdue: [
+      { memberName: 'Student Sample C', itemName: 'Analog Discovery 3', qty: 1, dueDate: '2026-07-28',
+        daysOverdue: 16, value: 38000 },
+      { memberName: 'Student Sample A', itemName: 'Fluke 15B+ Multimeter', qty: 1, dueDate: '2026-08-04',
+        daysOverdue: 9, value: 12500 },
+      { memberName: 'Student Sample B', itemName: 'Rigol DHO814 Oscilloscope', qty: 1,
+        dueDate: '2026-08-06', daysOverdue: 7, value: 46000 },
+      { memberName: 'Research Scholar Sample', itemName: 'Jetson Orin Nano Super', qty: 1,
+        dueDate: '2026-08-09', daysOverdue: 4, value: 48000 },
+      { memberName: 'Student Sample D', itemName: 'RPLIDAR A1M8', qty: 1, dueDate: '2026-08-10',
+        daysOverdue: 3, value: 9500 }
+    ],
+    calibration: [
+      { assetId: 'AST-000012', name: 'Precision Bench DMM 6.5 digit', serialNo: 'MY60012345',
+        dueOn: '2026-08-01', daysRemaining: -12, overdue: true },
+      { assetId: 'AST-000004', name: 'Digital Caliper 150mm', serialNo: '5001982',
+        dueOn: '2026-08-20', daysRemaining: 7, overdue: false },
+      { assetId: 'AST-000021', name: 'Clamp Meter TRMS 400A', serialNo: 'FL325-8841',
+        dueOn: '2026-09-01', daysRemaining: 19, overdue: false },
+      { assetId: 'AST-000009', name: 'Spectrum Analyzer 2.1GHz', serialNo: 'SSA3X22110',
+        dueOn: '2026-09-08', daysRemaining: 26, overdue: false }
+    ],
+    topBorrowers: []
+  };
+}
+
+/* ------------------------------------------------------------------- wiring */
+$('configBtn').onclick = () => {
+  const { ep, tk } = cfg();
+  $('epInput').value = ep; $('tkInput').value = tk;
+  $('configDlg').showModal();
+};
+$('saveCfg').onclick = () => {
+  localStorage.setItem(LS_EP, $('epInput').value.trim());
+  localStorage.setItem(LS_TK, $('tkInput').value.trim());
+  $('configDlg').close(); load();
+};
+$('clearCfg').onclick = () => {
+  localStorage.removeItem(LS_EP); localStorage.removeItem(LS_TK);
+  $('configDlg').close(); load();
+};
+$('refreshBtn').onclick = load;
+
+load();
+state.timer = setInterval(load, POLL_MS);
+</script>
+</body>
+</html>
