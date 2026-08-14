@@ -278,6 +278,8 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
 
 <main id="app" hidden>
 
+  <section id="sec-basis"><h2>Sizing basis</h2><div class="note" id="basis"></div></section>
+
   <section id="sec-kpi"><h2>Position at a glance &mdash; select a tile to jump</h2>
     <div class="tiles" id="tiles"></div></section>
 
@@ -300,6 +302,7 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
     <h2>Line-by-line: existing vs proposed</h2>
     <div class="controls">
       <input type="search" id="q" placeholder="Search item, spec, category or justification&hellip;">
+      <select id="fdisc"><option value="">All disciplines</option></select>
       <select id="fcat"><option value="">All categories</option></select>
       <select id="fstatus"><option value="">All holdings</option>
         <option value="NONE">Dept holds none</option>
@@ -308,7 +311,6 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
       <select id="fpri"><option value="">All priorities</option>
         <option value="P1">P1 immediate</option><option value="P2">P2 next phase</option>
         <option value="P3">P3 capability</option></select>
-      <select id="fsem"><option value="">All semesters</option></select>
       <button class="btn" id="clearBtn">Clear</button>
       <button class="btn" id="csvBtn">Export CSV</button>
       <span id="count" style="font-size:12px;color:var(--muted)"></span>
@@ -317,7 +319,7 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
       <thead><tr><th>ID</th><th>Item &amp; specification</th><th>Matched stock line</th>
         <th class="num">Uncommitted</th><th class="num">Dept total</th>
         <th class="num">Required</th><th class="num">Rate</th><th class="num">Line cost</th>
-        <th>Dept holds</th><th>Sem</th><th>Pri</th><th>Why it is required</th>
+        <th>Dept holds</th><th>Pri</th><th>Why it is required</th>
       </tr></thead><tbody id="tb"></tbody></table></div></div>
   </section>
 
@@ -350,6 +352,20 @@ const API = 'https://script.google.com/macros/s/AKfycbx0iaSzRcWxSCVAsjfXWW90kW_p
    (e.g. 'assets/c-shine-logo.png') or paste a data: URI.
    Left empty, the gold "C·S" monogram is used instead.                        */
 const LOGO = 'assets/KLE_Logo.png';
+
+/* ---------------------------------------------------------------------------
+   SIZING BASIS — shown on the page so the quantities have a stated derivation.
+   These are the figures the proposal was sized against. CONFIRM THEM before
+   the proposal goes to a sanctioning committee: every quantity follows from
+   them, and "150 ESP32" invites "for how many students?" as the first question.
+   --------------------------------------------------------------------------- */
+const SIZING = {
+  cohort:      150,   // students served per semester
+  batch:       60,    // largest concurrent batch in the room
+  benches:     20,    // workstations
+  perBench:    3,     // students per bench in a full batch
+  confirmed:   false  // set true once the department has signed these off
+};
 
 /* ---------------------------------------------------------------- content */
 const TEACHING=['lhc 103','lhc 203','lhc 303'];
@@ -388,7 +404,8 @@ function build(inventory,proposal){
     const w=num(p.ProposedQty), price=num(p.UnitPrice_INR);
     /* Separate facility: nothing is netted off. Full requirement is the ask. */
     const g=w;
-    return {id:p.ProposedID,n:p.ItemName,c:p.Category,sp:p.Specification||'',
+    return {id:p.ProposedID,n:p.ItemName,c:p.Category,d:p.Discipline||'Other',
+      sp:p.Specification||'',
       m:k?(display[k]||p.MatchedItemName):'',loc:k?(locs[k]||[]).join(', '):'',
       h:h,hd:hd,w:w,g:g,p:price,t:g*price,
       s:(hd>=w&&hd>0)?'HELD':(hd>0?'SOME':'NONE'),
@@ -435,7 +452,10 @@ function renderAll(){
     ['Reference holdings',short(held),'owned elsewhere &mdash; not deducted','ok','sec-redis',null],
     ['Transferable instead',short(redTot),red.length+' lines could move, not be bought','ok',
       'sec-redis',null],
-    ['Largest category',short(topCat.v),esc(topCat.c),'gold','sec-cat',null]
+    ['Largest category',short(topCat.v),esc(topCat.c),'gold','sec-cat',null],
+    ['Electronics only',short(ROWS.filter(r=>r.d==='Electronics').reduce((a,r)=>a+r.t,0)),
+      ROWS.filter(r=>r.d==='Electronics').length+' lines &mdash; excludes benches tools safety',
+      'gold','sec-lines',{fdisc:'Electronics'}]
   ];
 
   $('tiles').innerHTML=T.map((t,i)=>
@@ -443,7 +463,7 @@ function renderAll(){
      <div class="val">${esc(t[1])}</div><div class="sub">${t[2]}</div></button>`).join('');
   $('tiles').querySelectorAll('.tile').forEach(b=>{
     b.onclick=()=>{const t=T[+b.dataset.i];
-      if(t[5]!==null){['fcat','fstatus','fpri','fsem'].forEach(k=>$(k).value='');$('q').value='';}
+      if(t[5]!==null){['fdisc','fcat','fstatus','fpri'].forEach(k=>$(k).value='');$('q').value='';}
       jump(t[4],t[5]);};
   });
 
@@ -473,24 +493,41 @@ function renderAll(){
     <td><div class="bar"><span style="width:${(100*c.cost/max).toFixed(1)}%"></span></div></td></tr>`;
   }).join('');
 
+  const S=SIZING;
+  $('basis').innerHTML=
+    '<b>Every quantity on this page is derived from these figures.</b><br><br>'+
+    '<b>'+S.cohort+' students</b> served per semester &middot; largest concurrent batch '+
+    '<b>'+S.batch+'</b> &middot; <b>'+S.benches+'</b> workstations at <b>'+S.perBench+
+    '</b> students per bench.<br><br>'+
+    'Shared instruments are sized one per bench, consumables against the full cohort for a '+
+    'semester, and per-student items such as dev boards against the concurrent batch with a '+
+    'margin for damage and simultaneous projects.'+
+    (S.confirmed ? '' :
+      '<br><br><span style="color:var(--warn)"><b>Provisional.</b> These figures are '+
+      'inferred from the department\'s own reorder list and have not yet been confirmed. '+
+      'Confirm them before this goes to a sanctioning committee &mdash; the quantities '+
+      'follow from them.</span>');
+
   fillOptions(); draw(); sizeSticky();
 }
 
 function fillOptions(){
-  const fcat=$('fcat'),fsem=$('fsem'),c0=fcat.value,s0=fsem.value;
-  fcat.length=1;fsem.length=1;
+  const fcat=$('fcat'),fd=$('fdisc'),c0=fcat.value,d0=fd.value;
+  fcat.length=1;fd.length=1;
+  [...new Set(ROWS.map(r=>r.d))].sort().forEach(d=>
+    fd.insertAdjacentHTML('beforeend','<option>'+esc(d)+'</option>'));
+  fd.value=d0;
   [...new Set(ROWS.map(r=>r.c))].sort().forEach(c=>
     fcat.insertAdjacentHTML('beforeend','<option>'+esc(c)+'</option>'));
-  [...new Set(ROWS.map(r=>r.sem))].sort().forEach(s=>
-    fsem.insertAdjacentHTML('beforeend','<option>'+esc(s)+'</option>'));
-  fcat.value=c0;fsem.value=s0;
+  fcat.value=c0;
 }
 
 function visible(){
   const t=$('q').value.toLowerCase().trim();
   return ROWS.filter(d=>
+    (!$('fdisc').value||d.d===$('fdisc').value)&&
     (!$('fcat').value||d.c===$('fcat').value)&&(!$('fstatus').value||d.s===$('fstatus').value)&&
-    (!$('fpri').value||d.pri===$('fpri').value)&&(!$('fsem').value||d.sem===$('fsem').value)&&
+    (!$('fpri').value||d.pri===$('fpri').value)&&
     (!t||(d.n+' '+d.sp+' '+d.c+' '+d.why+' '+d.m+' '+d.id).toLowerCase().includes(t)));
 }
 
@@ -505,10 +542,9 @@ function draw(){
     <td class="num"><b>${d.g}</b></td><td class="num">${esc(inr(d.p))}</td>
     <td class="num">${d.t?esc(inr(d.t)):'&mdash;'}</td>
     <td><span class="pill ${d.s}">${d.s}</span></td>
-    <td style="white-space:nowrap;font-size:12px">${esc(d.sem)}</td>
     <td><span class="pill ${d.pri}">${esc(d.pri)}</span></td>
     <td class="why">${esc(d.why)}</td></tr>`).join('')
-    ||'<tr><td colspan="12" style="text-align:center;color:var(--dim);padding:30px">No lines match.</td></tr>';
+    ||'<tr><td colspan="11" style="text-align:center;color:var(--dim);padding:30px">No lines match.</td></tr>';
   $('count').textContent=rows.length+' of '+ROWS.length+' lines · '+
     inr(rows.reduce((a,d)=>a+d.t,0))+' total';
 }
@@ -520,13 +556,13 @@ function sizeSticky(){
 }
 addEventListener('resize',sizeSticky);
 
-['q','fcat','fstatus','fpri','fsem'].forEach(id=>$(id).addEventListener('input',draw));
-$('clearBtn').onclick=()=>{['fcat','fstatus','fpri','fsem'].forEach(k=>$(k).value='');
+['q','fdisc','fcat','fstatus','fpri'].forEach(id=>$(id).addEventListener('input',draw));
+$('clearBtn').onclick=()=>{['fdisc','fcat','fstatus','fpri'].forEach(k=>$(k).value='');
   $('q').value='';draw();};
 $('printBtn').onclick=()=>window.print();
 $('csvBtn').onclick=()=>{
-  const cols=['id','n','c','sp','m','loc','h','hd','w','g','p','t','s','sem','pri','why'];
-  const head=['ID','Item','Category','Spec','MatchedStock','HeldAt','UncommittedQty',
+  const cols=['id','n','c','d','sp','m','loc','h','hd','w','g','p','t','s','sem','pri','why'];
+  const head=['ID','Item','Category','Discipline','Spec','MatchedStock','HeldAt','UncommittedQty',
     'DeptTotalQty','Proposed','Required','Rate','LineCost','DeptHolds','Semester','Priority',
     'Justification'];
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -571,12 +607,16 @@ async function load(first){
     $('app').hidden=false;
     renderAll();
     $('dot').className='dot live';
-    /* Timestamp is the SERVER's, sent by Apps Script alongside the data -
-       not the viewer's clock, so every reader sees the same reading time. */
-    const stamp=j.generatedAtLocal||(j.generatedAt?dmyTime(new Date(j.generatedAt)):'—');
-    $('srcText').innerHTML='Live from C-SHInE Google Sheet &middot; '+inv.length+
-      ' stock rows &middot; '+prop.length+' proposed &middot; '+esc(stamp)+
-      (j.cached?' <span style="color:var(--dim)">(cached)</span>':'');
+    /* Both stamps come from the Sheet side, never the viewer's clock:
+         sheetEditedAt - when the Sheet was last actually edited
+         generatedAtLocal - when this reading was taken by Apps Script          */
+    const edited=j.sheetEditedAt||'', readAt=j.generatedAtLocal||
+      (j.generatedAt?dmyTime(new Date(j.generatedAt)):'—');
+    $('srcText').innerHTML='Live from C-SHInE Proposal_Data &middot; '+inv.length+
+      ' stock rows &middot; '+prop.length+' proposed'+
+      (edited?' &middot; <b style="color:var(--gold-soft)">Sheet updated '+esc(edited)+'</b>':'')+
+      ' &middot; <span style="color:var(--dim)">read '+esc(readAt)+
+      (j.cached?' (cached)':'')+'</span>';
     $('boot').classList.add('done');
     setTimeout(()=>{$('boot').style.display='none';},600);
   }catch(err){
