@@ -143,6 +143,13 @@ font-weight:700;letter-spacing:.03em;border:1px solid transparent}
 .pill.P2{background:rgba(224,161,58,.14);color:var(--warn);border-color:rgba(224,161,58,.35)}
 .pill.P3{background:rgba(157,176,197,.12);color:var(--muted);border-color:rgba(157,176,197,.3)}
 .why{color:var(--muted);font-size:12px;max-width:380px;line-height:1.45}
+/* Supplier names and sourcing URLs are long and have few break opportunities,
+   so allow breaking anywhere rather than letting one cell stretch the table. */
+.sup{max-width:150px;font-size:12px;overflow-wrap:anywhere;word-break:break-word;
+line-height:1.4}
+.sup a{color:var(--gold-soft);text-decoration:none;border-bottom:1px dotted var(--gold-dim)}
+.sup a:hover{color:var(--gold);border-bottom-style:solid}
+.sup a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;
 position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
@@ -238,7 +245,8 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
 
   /* trim the widest low-value columns so the table fits the page */
   #mainTbl th:nth-child(3),#mainTbl td:nth-child(3),
-  #mainTbl th:nth-child(4),#mainTbl td:nth-child(4){display:none}
+  #mainTbl th:nth-child(4),#mainTbl td:nth-child(4),
+  #mainTbl th:nth-child(11),#mainTbl td:nth-child(11){display:none}
 
   footer{position:static;background:#fff;color:#333;border-color:#ccc;height:auto;
     padding:3mm 0 0;margin-top:4mm}
@@ -256,7 +264,7 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
     <h2>Project Clinic Inventory System</h2>
     <p class="sub">C-SHInE &middot; KLE Technological University</p>
     <div class="track"><i></i></div>
-    <div id="bootMsg">Connecting to C-SHInE Proposal_Data&hellip;</div>
+    <div id="bootMsg">Connecting to C-SHInE data&hellip;</div>
     <div id="bootErr"></div>
   </div>
 </div>
@@ -278,6 +286,61 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
 
 <main id="app" hidden>
 
+  <section id="sec-preface"><h2>Before you read the numbers</h2>
+    <div class="note" style="border-left-color:var(--gold)">
+      <b>This is a proposal for a new, separate facility.</b> The Project Clinic is a
+      student-operated project laboratory. It is <i>not</i> an extension of LHC 103 / 203 / 303,
+      and it does not draw on their stock &mdash; those labs need what they hold for timetabled
+      teaching.<br><br>
+      So <b>nothing is netted off</b>. Every line is costed at its full requirement. What the
+      department already owns is shown alongside purely as <b>context</b>, so the committee can
+      see where an item exists elsewhere and decide, separately, whether to transfer it rather
+      than buy it. That decision belongs to the department; no total on this page assumes it.
+      <br><br>
+      Figures are read live from the department Google Sheet. Prices are indicative for
+      budgeting and require three quotations before any purchase order.
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;color:var(--gold-soft);font-weight:600">
+          What each column and label means</summary>
+        <div class="tblwrap" style="margin-top:10px"><table>
+          <thead><tr><th>Column / label</th><th>Meaning</th></tr></thead><tbody>
+          <tr><td><b>In store</b></td><td>Quantity held outside the timetabled teaching labs
+            &mdash; Store Room, Project Lab, Tinkering Lab, specialist labs. Reachable without
+            disrupting a class. Shown for context only; it does not reduce the ask.</td></tr>
+          <tr><td><b>Dept total</b></td><td>Everything the department holds of that item, in
+            every location including LHC 103 / 203 / 303. This is what the holdings label
+            below is based on.</td></tr>
+          <tr><td><b>Propose</b> / <b>Required</b></td><td>The quantity the Clinic needs. They
+            match, because nothing is deducted &mdash; both are shown so it is unambiguous
+            that no netting has occurred.</td></tr>
+          <tr><td><b>Line cost</b></td><td>Required &times; Rate. Ex-GST.</td></tr>
+          <tr><td><span class="pill NONE">NONE</span></td><td>The department holds none of this
+            item anywhere.</td></tr>
+          <tr><td><span class="pill SOME">SOME</span></td><td>It holds some, but fewer than the
+            Clinic needs.</td></tr>
+          <tr><td><span class="pill HELD">HELD</span></td><td>It already holds this quantity or
+            more, somewhere. A candidate for transfer rather than purchase &mdash; see
+            Redistribution.</td></tr>
+          <tr><td><span class="pill P1">P1</span></td><td>Immediate. Without it, student
+            projects cannot start.</td></tr>
+          <tr><td><span class="pill P2">P2</span></td><td>Next phase. Deepens what the Clinic
+            can do.</td></tr>
+          <tr><td><span class="pill P3">P3</span></td><td>Capability building. Deferrable
+            without blocking anything.</td></tr>
+          <tr><td><b>Discipline</b></td><td>Electronics, Infrastructure, Operations, Mechanical,
+            Tools or Safety &mdash; filter by it to see, for example, the electronics-only
+            figure.</td></tr>
+          <tr><td><b>Supplier</b></td><td>Suggested source, linked to a search on that
+            supplier's catalogue. Indicative only &mdash; obtain three quotations before
+            raising a purchase order. Omitted from the printed copy; use the CSV export,
+            which carries both the supplier and the full URL.</td></tr>
+          <tr><td><b>Matched stock line</b></td><td>The existing inventory item this proposal
+            line was matched to, with the locations holding it. A dash means no equivalent
+            exists in the department.</td></tr>
+        </tbody></table></div>
+      </details>
+    </div></section>
+
   <section id="sec-basis"><h2>Sizing basis</h2><div class="note" id="basis"></div></section>
 
   <section id="sec-kpi"><h2>Position at a glance &mdash; select a tile to jump</h2>
@@ -286,7 +349,7 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
   <section id="sec-redis"><h2>Redistribution before purchase</h2>
     <div class="note" style="border-left-color:var(--good)" id="redisNote"></div>
     <div class="panel" style="margin-top:13px"><div class="tblwrap tall"><table>
-      <thead><tr><th>Item</th><th class="num">Uncommitted</th><th class="num">Dept total</th>
+      <thead><tr><th>Item</th><th class="num">In store</th><th class="num">Dept total</th>
         <th class="num">Transferable</th><th class="num">Avoided cost</th>
         <th>Currently held at</th></tr></thead>
       <tbody id="redisBody"></tbody></table></div></div></section>
@@ -317,9 +380,9 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
     </div>
     <div class="panel"><div class="tblwrap tall"><table id="mainTbl">
       <thead><tr><th>ID</th><th>Item &amp; specification</th><th>Matched stock line</th>
-        <th class="num">Uncommitted</th><th class="num">Dept total</th>
+        <th class="num">In store</th><th class="num">Dept total</th>
         <th class="num">Required</th><th class="num">Rate</th><th class="num">Line cost</th>
-        <th>Dept holds</th><th>Pri</th><th>Why it is required</th>
+        <th>Dept holds</th><th>Pri</th><th>Supplier</th><th>Why it is required</th>
       </tr></thead><tbody id="tb"></tbody></table></div></div>
   </section>
 
@@ -409,7 +472,8 @@ function build(inventory,proposal){
       m:k?(display[k]||p.MatchedItemName):'',loc:k?(locs[k]||[]).join(', '):'',
       h:h,hd:hd,w:w,g:g,p:price,t:g*price,
       s:(hd>=w&&hd>0)?'HELD':(hd>0?'SOME':'NONE'),
-      sem:p.Semesters||'',pri:p.Priority||'',why:p.Justification||'',sup:p.Supplier||''};
+      sem:p.Semesters||'',pri:p.Priority||'',why:p.Justification||'',
+      sup:p.Supplier||'',url:p.SourcingURL||''};
   });
 }
 
@@ -543,8 +607,12 @@ function draw(){
     <td class="num">${d.t?esc(inr(d.t)):'&mdash;'}</td>
     <td><span class="pill ${d.s}">${d.s}</span></td>
     <td><span class="pill ${d.pri}">${esc(d.pri)}</span></td>
+    <td class="sup">${d.url
+      ? '<a href="'+esc(d.url)+'" target="_blank" rel="noopener noreferrer">'+
+        esc(d.sup||'source')+'</a>'
+      : esc(d.sup||'&mdash;')}</td>
     <td class="why">${esc(d.why)}</td></tr>`).join('')
-    ||'<tr><td colspan="11" style="text-align:center;color:var(--dim);padding:30px">No lines match.</td></tr>';
+    ||'<tr><td colspan="12" style="text-align:center;color:var(--dim);padding:30px">No lines match.</td></tr>';
   $('count').textContent=rows.length+' of '+ROWS.length+' lines · '+
     inr(rows.reduce((a,d)=>a+d.t,0))+' total';
 }
@@ -561,10 +629,11 @@ $('clearBtn').onclick=()=>{['fdisc','fcat','fstatus','fpri'].forEach(k=>$(k).val
   $('q').value='';draw();};
 $('printBtn').onclick=()=>window.print();
 $('csvBtn').onclick=()=>{
-  const cols=['id','n','c','d','sp','m','loc','h','hd','w','g','p','t','s','sem','pri','why'];
-  const head=['ID','Item','Category','Discipline','Spec','MatchedStock','HeldAt','UncommittedQty',
-    'DeptTotalQty','Proposed','Required','Rate','LineCost','DeptHolds','Semester','Priority',
-    'Justification'];
+  const cols=['id','n','c','d','sp','m','loc','h','hd','w','g','p','t','s','sem','pri',
+    'sup','url','why'];
+  const head=['ID','Item','Category','Discipline','Spec','MatchedStock','HeldAt',
+    'InStoreQty','DeptTotalQty','Proposed','Required','Rate','LineCost','DeptHolds',
+    'Semester','Priority','Supplier','SourcingURL','Justification'];
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const csv=[head.join(',')].concat(visible().map(d=>cols.map(c=>q(d[c])).join(','))).join('\n');
   const a=document.createElement('a');
@@ -621,7 +690,7 @@ async function load(first){
     setTimeout(()=>{$('boot').style.display='none';},600);
   }catch(err){
     if(first){
-      bootFail('Could not reach the C-SHInE Sheet: '+err.message,
+      bootFail('Could not reach the C-SHInE Proposal_Data: '+err.message,
         'Check the deployment is live and readable, then reload.');
     }else{
       $('dot').className='dot err';
