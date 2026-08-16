@@ -297,7 +297,7 @@ padding:9px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
       see where an item exists elsewhere and decide, separately, whether to transfer it rather
       than buy it. That decision belongs to the department; no total on this page assumes it.
       <br><br>
-      Figures are read live from the department Google Sheet. Prices are indicative for
+      Figures are read live from the department Proposal_Data. Prices are indicative for
       budgeting and require three quotations before any purchase order.
       <details style="margin-top:14px">
         <summary style="cursor:pointer;color:var(--gold-soft);font-weight:600">
@@ -414,7 +414,7 @@ const API = 'https://script.google.com/macros/s/AKfycbx0iaSzRcWxSCVAsjfXWW90kW_p
 /* Optional: a logo. Point at a file committed beside this page
    (e.g. 'assets/c-shine-logo.png') or paste a data: URI.
    Left empty, the gold "C·S" monogram is used instead.                        */
-const LOGO = 'assets/KLE_Logo.png';
+const LOGO = '';
 
 /* ---------------------------------------------------------------------------
    SIZING BASIS — shown on the page so the quantities have a stated derivation.
@@ -642,7 +642,7 @@ $('csvBtn').onclick=()=>{
 };
 
 /* ------------------------------------------------------------------- load */
-const STEPS=['Connecting to C-SHInE Proposal_Data…','Reading the department Sheet…',
+const STEPS=['Connecting to C-SHInE Proposal_Data…','Reading the Department Data…',
              'Matching existing stock…','Costing the requirement…'];
 let stepTimer=null;
 function runSteps(){let i=0;$('bootMsg').textContent=STEPS[0];
@@ -681,7 +681,7 @@ async function load(first){
          generatedAtLocal - when this reading was taken by Apps Script          */
     const edited=j.sheetEditedAt||'', readAt=j.generatedAtLocal||
       (j.generatedAt?dmyTime(new Date(j.generatedAt)):'—');
-    $('srcText').innerHTML='Live from C-SHInE Proposal_Data &middot; '+inv.length+
+    $('srcText').innerHTML='Live from C-SHInE Proposal Data &middot; '+inv.length+
       ' stock rows &middot; '+prop.length+' proposed'+
       (edited?' &middot; <b style="color:var(--gold-soft)">Sheet updated '+esc(edited)+'</b>':'')+
       ' &middot; <span style="color:var(--dim)">read '+esc(readAt)+
@@ -690,7 +690,7 @@ async function load(first){
     setTimeout(()=>{$('boot').style.display='none';},600);
   }catch(err){
     if(first){
-      bootFail('Could not reach the C-SHInE Proposal_Data: '+err.message,
+      bootFail('Could not reach the C-SHInE Proposal Data: '+err.message,
         'Check the deployment is live and readable, then reload.');
     }else{
       $('dot').className='dot err';
